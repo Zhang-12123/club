@@ -1,0 +1,112 @@
+附录六：网关服务核心代码（GatewayConfiguration.java）
+
+网关服务（jc-club-gateway）基于Spring Cloud Gateway构建，是系统的统一入口，负责请求路由、Token认证和跨域处理。
+
+```java
+@Configuration
+public class SaTokenConfigure {
+
+    /**
+     * 注册Sa-Token全局过滤器，实现统一的Token认证和权限校验
+     */
+    @Bean
+    public SaReactorFilter getSaReactorFilter() {
+        return new SaReactorFilter()
+            // 拦截所有路径
+            .addInclude("/**")
+            // 排除登录接口
+            .addExclude("/user/doLogin", "/user/register")
+            // 认证函数
+            .setAuth(obj -> {
+                // 检查是否登录
+                StpUtil.checkLogin();
+            })
+            // 权限校验规则
+            .setBeforeAuth(obj -> {
+                SaRouter.match("/subject/subject/add",
+                    r -> StpUtil.checkPermission("subject:add"));
+                SaRouter.match("/subject/**",
+                    r -> StpUtil.checkLogin());
+                SaRouter.match("/oss/**",
+                    r -> StpUtil.checkLogin());
+            })
+            // 异常处理
+            .setError(e -> {
+                if (e instanceof NotLoginException) {
+                    return SaResult.error("请先登录");
+                }
+                if (e instanceof NotPermissionException) {
+                    return SaResult.error("权限不足");
+                }
+                return SaResult.error("服务器异常");
+            });
+    }
+}
+```
+
+```java
+/**
+ * 全局登录过滤器，从请求头提取Token并向下游服务传递用户信息
+ */
+@Component
+public class LoginFilter implements GlobalFilter, Ordered {
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange,
+            GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+
+        // 从请求头获取Token
+        String token = request.getHeaders()
+            .getFirst("satoken");
+
+        if (StringUtils.isNotBlank(token)) {
+            // 解析Token获取登录ID
+            Object loginId = StpUtil.getLoginIdByToken(
+                token.replace("jichi ", ""));
+
+            if (loginId != null) {
+                // 将loginId传递给下游微服务
+                ServerHttpRequest newRequest = request.mutate()
+                    .header("loginId", loginId.toString())
+                    .build();
+                return chain.filter(
+                    exchange.mutate().request(newRequest).build());
+            }
+        }
+
+        return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return -100;
+    }
+}
+```
+
+```yaml
+# Gateway路由配置
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: auth
+          uri: lb://jc-club-auth-dev
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        - id: subject
+          uri: lb://jc-club-subject-dev
+          predicates:
+            - Path=/subject/**
+          filters:
+            - StripPrefix=1
+        - id: practice
+          uri: lb://jc-club-practice-dev
+          predicates:
+            - Path=/practice/**
+          filters:
+            - StripPrefix=1
+```

@@ -1,0 +1,120 @@
+附录二：题目管理服务核心代码（SubjectController.java）
+
+题目管理服务（jc-club-subject）的核心控制器，负责题目的增删改查、分类标签关联和全文检索功能。
+
+```java
+@RestController
+@RequestMapping("/subject")
+public class SubjectController {
+
+    @Resource
+    private SubjectInfoDomainService subjectInfoDomainService;
+
+    @Resource
+    private SubjectLikedDomainService subjectLikedDomainService;
+
+    /**
+     * 新增题目
+     */
+    @PostMapping("/add")
+    public Result<Boolean> add(@RequestBody SubjectInfoDTO subjectInfoDTO) {
+        try {
+            SubjectInfoBO subjectInfoBO = SubjectInfoConverter
+                .INSTANCE.convertDTOToBO(subjectInfoDTO);
+            subjectInfoDomainService.add(subjectInfoBO);
+            return Result.ok(true);
+        } catch (Exception e) {
+            log.error("SubjectController.add.error:{}", e.getMessage(), e);
+            return Result.fail("新增题目失败");
+        }
+    }
+
+    /**
+     * 分页查询题目列表
+     */
+    @PostMapping("/getSubjectPage")
+    public Result<PageResult<SubjectInfoBO>> getSubjectPage(
+            @RequestBody SubjectInfoDTO subjectInfoDTO) {
+        SubjectInfoBO subjectInfoBO = SubjectInfoConverter
+            .INSTANCE.convertDTOToBO(subjectInfoDTO);
+        PageResult<SubjectInfoBO> pageResult =
+            subjectInfoDomainService.getSubjectPage(subjectInfoBO);
+        return Result.ok(pageResult);
+    }
+
+    /**
+     * 查询题目详情（含答案和解析）
+     */
+    @PostMapping("/querySubjectInfo")
+    public Result<SubjectInfoBO> querySubjectInfo(
+            @RequestBody SubjectInfoDTO subjectInfoDTO) {
+        SubjectInfoBO subjectInfoBO = SubjectInfoConverter
+            .INSTANCE.convertDTOToBO(subjectInfoDTO);
+        SubjectInfoBO result = subjectInfoDomainService
+            .querySubjectInfo(subjectInfoBO);
+        return Result.ok(result);
+    }
+
+    /**
+     * Elasticsearch全文检索题目
+     */
+    @PostMapping("/getSubjectPageBySearch")
+    public Result<PageResult<SubjectInfoEs>> getSubjectPageBySearch(
+            @RequestBody SubjectInfoDTO subjectInfoDTO) {
+        SubjectInfoBO subjectInfoBO = SubjectInfoConverter
+            .INSTANCE.convertDTOToBO(subjectInfoDTO);
+        PageResult<SubjectInfoEs> pageResult =
+            subjectInfoDomainService.getSubjectPageBySearch(subjectInfoBO);
+        return Result.ok(pageResult);
+    }
+
+    /**
+     * 获取贡献榜
+     */
+    @PostMapping("/getContributeList")
+    public Result<List<SubjectInfoBO>> getContributeList() {
+        List<SubjectInfoBO> result =
+            subjectInfoDomainService.getContributeList();
+        return Result.ok(result);
+    }
+}
+```
+
+```java
+/**
+ * 题型处理策略接口 - 策略模式实现
+ */
+public interface SubjectTypeHandler {
+    SubjectTypeEnum getHandlerType();
+    void add(SubjectInfoBO subjectInfoBO);
+    SubjectInfoBO query(SubjectInfoBO subjectInfoBO);
+}
+
+/**
+ * 单选题处理器
+ */
+@Component
+public class RadioTypeHandler implements SubjectTypeHandler {
+
+    @Resource
+    private SubjectRadioDao subjectRadioDao;
+
+    @Override
+    public SubjectTypeEnum getHandlerType() {
+        return SubjectTypeEnum.RADIO;
+    }
+
+    @Override
+    public void add(SubjectInfoBO subjectInfoBO) {
+        List<SubjectAnswerBO> optionList = subjectInfoBO.getOptionList();
+        for (SubjectAnswerBO option : optionList) {
+            SubjectRadio subjectRadio = new SubjectRadio();
+            subjectRadio.setSubjectId(subjectInfoBO.getId());
+            subjectRadio.setOptionType(option.getOptionType());
+            subjectRadio.setOptionContent(option.getOptionContent());
+            subjectRadio.setIsCorrect(option.getIsCorrect());
+            subjectRadioDao.insert(subjectRadio);
+        }
+    }
+}
+```

@@ -1,0 +1,43 @@
+信息存储是软件系统中不可或缺的重要组成部分。jc-club平台涉及的信息量较大，为了方便用户和管理员的高效使用，必须设计一个合理的数据库结构，用于存放所有相关信息。同时，为了更直观地分析各个实体及其属性之间的关系，需要借助E-R图对实体间的联系进行全面分析。
+
+通过绘制E-R图，可以更清晰地表达系统中的实体、属性以及它们之间的关联，从而为后续的详细设计提供依据。结合软件的功能需求，对每个实体进行深入分析，设计出合理的数据表结构。针对每张表中的实体属性，进一步明确字段的设计及其对应的数据类型与约束条件，确保数据库在逻辑层面上的完整性和合理性。
+
+用户管理模块、题目管理模块、练习管理模块、面试管理模块、圈子模块是本系统的核心实体。上述实体的属性详细如下图所示。
+
+1. 用户管理E-R图，如图3.6所示。用户实体包含用户ID、用户名、昵称、密码、邮箱、手机号、性别、头像、状态、个人介绍、创建时间、更新时间等属性。用户与角色之间通过用户角色关联表建立多对多关系。
+
+2. 题目管理E-R图，如图3.7所示。题目实体包含题目ID、题目名称、题目类型、题目难度、题目分数、题目题干、题目解析、分类ID、创建者、创建时间、更新时间等属性。题目与分类通过题目分类关联表建立关系，题目与标签通过题目标签关联表建立关系。
+
+3. 练习管理E-R图，如图3.8所示。练习记录实体包含练习ID、套题ID、完成状态、用时、提交时间、正确率、创建者、创建时间等属性。练习详情实体包含练习详情ID、练习ID、题目ID、题目类型、回答状态、回答内容等属性。
+
+4. 面试管理E-R图，如图3.9所示。面试记录实体包含面试ID、用户ID、面试类型、面试时长、面试评分、创建时间等属性。面试问题记录实体包含问题记录ID、面试ID、问题内容、用户回答、AI评分等属性。
+
+5. 社区圈子E-R图，如图3.10所示。圈子实体包含圈子ID、圈子名称、圈子描述、圈子图标、创建者、创建时间等属性。动态实体包含动态ID、动态内容、动态图片、发布者、圈子ID、点赞数、创建时间等属性。评论实体包含评论ID、评论内容、评论者、关联动态ID、父评论ID、创建时间等属性。
+
+以下为系统主要数据库表的逻辑设计，包含字段名、数据类型、是否为空和说明等信息。
+
+auth_user（用户表）：用于存储系统用户的基本信息，包括id(主键)、user_name(用户名)、nick_name(昵称)、email(邮箱)、phone(手机号)、password(密码)、sex(性别)、avatar(头像)、status(状态)、introduce(个人介绍)、ext_json(扩展字段)、created_by(创建人)、created_time(创建时间)、update_by(更新人)、update_time(更新时间)、is_deleted(逻辑删除标记)等字段。
+
+subject_info（题目信息表）：用于存储题目的基本信息，包括id(主键)、subject_name(题目名称)、subject_type(题目类型，1-单选/2-多选/3-判断/4-简答)、subject_difficult(题目难度)、subject_score(题目分数)、subject_parse(题目解析)、subject_count(题目数量)、created_by(创建人)、created_time(创建时间)、update_by(更新人)、update_time(更新时间)、is_deleted(逻辑删除标记)等字段。
+
+subject_category（题目分类表）：用于存储题目的多级分类信息，包括id(主键)、category_name(分类名称)、category_type(分类类型)、parent_id(父分类ID)、created_by(创建人)、created_time(创建时间)、update_by(更新人)、update_time(更新时间)、is_deleted(逻辑删除标记)等字段。
+
+subject_label（题目标签表）：用于存储题目的标签信息，包括id(主键)、label_name(标签名称)、category_id(关联分类ID)、created_by(创建人)、created_time(创建时间)、update_by(更新人)、update_time(更新时间)、is_deleted(逻辑删除标记)等字段。
+
+practice_info（练习记录表）：用于存储用户的练习记录，包括id(主键)、set_id(套题ID)、complete_status(完成状态，1完成/0未完成)、time_use(用时)、submit_time(交卷时间)、correct_rate(正确率)、created_by(创建人)、created_time(创建时间)、update_by(更新人)、update_time(更新时间)、is_deleted(逻辑删除标记)等字段。
+
+practice_detail（练习详情表）：用于存储练习中每道题的作答详情，包括id(主键)、practice_id(练习ID)、subject_id(题目ID)、subject_type(题目类型)、answer_status(回答状态)、answer_content(回答内容)、created_by(创建人)、created_time(创建时间)、is_deleted(逻辑删除标记)等字段。
+
+practice_set（练习套题表）：用于存储练习套题的配置信息，包括id(主键)、set_name(套题名称)、set_desc(套题描述)、primary_category_id(一级分类ID)、created_by(创建人)、created_time(创建时间)、is_deleted(逻辑删除标记)等字段。
+
+interview_history（面试记录表）：用于存储用户的模拟面试记录，包括id(主键)、user_id(用户ID)、interview_type(面试类型)、duration(面试时长)、score(面试评分)、resume_url(简历地址)、created_time(创建时间)等字段。
+
+interview_question_history（面试问题记录表）：用于存储面试中每道问题的问答记录，包括id(主键)、interview_id(关联面试ID)、question(问题内容)、answer(用户回答)、ai_score(AI评分)、ai_comment(AI评价)、created_time(创建时间)等字段。
+
+share_circle（圈子表）：用于存储社区圈子信息，包括id(主键)、circle_name(圈子名称)、circle_desc(圈子描述)、circle_icon(圈子图标)、created_by(创建者)、created_time(创建时间)、is_deleted(逻辑删除标记)等字段。
+
+share_moment（动态表）：用于存储用户发布的动态信息，包括id(主键)、circle_id(关联圈子ID)、content(动态内容)、images(动态图片URL列表)、praise_count(点赞数)、created_by(发布者)、created_time(创建时间)、is_deleted(逻辑删除标记)等字段。
+
+share_comment_reply（评论回复表）：用于存储动态的评论和回复信息，包括id(主键)、moment_id(关联动态ID)、content(评论内容)、parent_id(父评论ID，用于回复功能)、created_by(评论者)、created_time(创建时间)、is_deleted(逻辑删除标记)等字段。
+
+auth_permission（权限表）：用于存储系统权限信息，包括id(主键)、name(权限名称)、parent_id(父权限ID)、type(权限类型)、menu_url(菜单路由)、status(状态)、permission_key(权限唯一标识)等字段。auth_role（角色表）存储角色信息，auth_role_permission（角色权限关联表）建立角色与权限的多对多关系，auth_user_role（用户角色关联表）建立用户与角色的多对多关系，共同实现基于RBAC的权限管理模型。

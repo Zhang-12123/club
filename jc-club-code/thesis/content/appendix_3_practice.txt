@@ -1,0 +1,108 @@
+附录三：练习管理服务核心代码（PracticeDetailController.java）
+
+练习管理服务（jc-club-practice）的核心控制器，负责专项练习、答题提交与自动评分、练习报告生成。
+
+```java
+@RestController
+@RequestMapping("/practice/detail")
+public class PracticeDetailController {
+
+    @Resource
+    private PracticeDetailService practiceDetailService;
+
+    /**
+     * 提交单道题目的答案
+     */
+    @PostMapping("/submitSubject")
+    public Result<Boolean> submitSubject(
+            @RequestBody PracticeDetailDTO dto) {
+        try {
+            return practiceDetailService.submitSubject(dto);
+        } catch (Exception e) {
+            log.error("PracticeDetailController.submitSubject.error:{}",
+                e.getMessage(), e);
+            return Result.fail("提交答案失败");
+        }
+    }
+
+    /**
+     * 提交整份练习（交卷）
+     */
+    @PostMapping("/submit")
+    public Result<Boolean> submit(
+            @RequestBody PracticeDetailDTO dto) {
+        try {
+            return practiceDetailService.submit(dto);
+        } catch (Exception e) {
+            log.error("PracticeDetailController.submit.error:{}",
+                e.getMessage(), e);
+            return Result.fail("提交练习失败");
+        }
+    }
+
+    /**
+     * 获取练习评估报告
+     */
+    @PostMapping("/getReport")
+    public Result<PracticeReportVO> getReport(
+            @RequestBody PracticeDetailDTO dto) {
+        PracticeReportVO report =
+            practiceDetailService.getReport(dto);
+        return Result.ok(report);
+    }
+
+    /**
+     * 获取练习排行榜
+     */
+    @PostMapping("/getPracticeRankList")
+    public Result<List<PracticeRankVO>> getPracticeRankList(
+            @RequestBody PracticeDetailDTO dto) {
+        List<PracticeRankVO> rankList =
+            practiceDetailService.getPracticeRankList(dto);
+        return Result.ok(rankList);
+    }
+}
+```
+
+```java
+/**
+ * 练习提交核心逻辑 - 自动评分
+ */
+@Service
+public class PracticeDetailServiceImpl implements PracticeDetailService {
+
+    @Override
+    public Result<Boolean> submit(PracticeDetailDTO dto) {
+        // 1. 查询该练习的所有题目作答记录
+        List<PracticeDetail> detailList = practiceDetailDao
+            .selectByPracticeId(dto.getPracticeId());
+
+        int correctCount = 0;
+        // 2. 逐题比对答案，计算得分
+        for (PracticeDetail detail : detailList) {
+            SubjectAnswer correctAnswer = subjectDao
+                .getCorrectAnswer(detail.getSubjectId());
+            boolean isCorrect = checkAnswer(
+                detail.getAnswerContent(), correctAnswer);
+            if (isCorrect) {
+                correctCount++;
+                detail.setAnswerStatus(1);
+            }
+            practiceDetailDao.updateById(detail);
+        }
+
+        // 3. 更新练习记录
+        PracticeInfo practiceInfo = practiceInfoDao
+            .selectById(dto.getPracticeId());
+        BigDecimal correctRate = BigDecimal.valueOf(correctCount)
+            .divide(BigDecimal.valueOf(detailList.size()), 2,
+                RoundingMode.HALF_UP);
+        practiceInfo.setCorrectRate(correctRate);
+        practiceInfo.setCompleteStatus(1);
+        practiceInfo.setSubmitTime(new Date());
+        practiceInfoDao.updateById(practiceInfo);
+
+        return Result.ok(true);
+    }
+}
+```

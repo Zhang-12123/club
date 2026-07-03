@@ -1,0 +1,39 @@
+jc-club平台后端基于DDD微服务架构实现，遵循严格的四层分层模型：API层、应用层（Application）、领域层（Domain）和基础设施层（Infrastructure）。[7]各微服务模块独立开发与部署，通过Nacos实现服务发现，通过OpenFeign完成服务间调用，通过Gateway网关对外统一暴露API。[2]以下对各核心微服务模块的实现进行描述。
+
+1. 用户认证服务（jc-club-auth）
+
+用户认证服务负责系统用户的注册、登录、鉴权和角色权限管理。在DDD分层实现中，auth-api模块定义了UserFeignService接口供其他微服务调用，以及AuthUserDTO数据传输对象。auth-application-controller模块中的UserController暴露用户注册（/user/register）、登录（/user/login）等REST接口。auth-domain模块包含AuthUserDomainService领域服务接口及其实现类AuthUserDomainServiceImpl，负责用户注册的业务规则校验（用户名唯一性检查、密码加密存储等）、登录认证逻辑（密码验证、Token生成）。auth-infra模块封装了auth_user、auth_role、auth_permission等数据库表的Mapper操作和Redis缓存操作。[18]
+
+用户登录时，系统首先通过AuthUserDao查询auth_user表获取用户信息，使用BCrypt算法验证密码。验证通过后，系统生成JWT Token（包含用户ID、用户名、角色信息等载荷），将Token与用户权限信息存入Redis（设置过期时间），最后将Token返回客户端。[17]权限校验通过Gateway网关的全局过滤器实现——网关从请求头中提取Token，调用Auth服务验证Token有效性并获取用户权限列表，判断是否有访问目标资源的权限。[18]Auth服务的核心代码见附录四。
+
+2. 题目管理服务（jc-club-subject）
+
+题目管理服务是平台最核心的微服务模块，负责题目的增删改查、分类管理、标签管理和全文检索。subject-application-controller模块中的SubjectController暴露题目新增（/subject/add）、题目分页查询（/subject/getSubjectPage）、题目详情查询（/subject/querySubjectInfo）、全文检索（/subject/getSubjectPageBySearch）和贡献榜（/subject/getContributeList）等接口。
+
+subject-domain模块是业务核心，采用策略模式和工厂模式实现了四种题型的统一处理。[7]SubjectTypeHandlerFactory工厂类根据题目类型返回对应的题型处理器——RadioTypeHandler处理单选题、MultipleTypeHandler处理多选题、JudgeTypeHandler处理判断题、BriefTypeHandler处理简答题。各题型处理器实现SubjectTypeHandler接口的add和query方法，在add方法中分别向subject_radio、subject_multiple、subject_judge、subject_brief表写入题型特有的数据（如选项列表、正确答案等），在query方法中从对应表中读取数据并组装。
+
+全文检索功能通过subject-infra模块的Elasticsearch集成实现。[19]SubjectInfoEs实体类定义了ES索引的字段映射，SubjectInfoDao的searchSubjectInfoByEs方法封装了ES查询DSL的构建和执行逻辑。当题目数据发生新增或更新时，领域服务通过RocketMQ发送消息，消费者异步更新ES索引。题目管理服务的核心代码见附录二。
+
+3. 练习管理服务（jc-club-practice）
+
+练习管理服务负责专项练习内容的展示、智能组卷、答题提交与评分以及练习报告生成。practice-server模块中的PracticeSetController提供练习套题列表查询接口，PracticeDetailController提供练习详情查询和练习提交接口。
+
+智能组卷是练习服务的核心算法，实现在PracticeSetDomainService中。组卷策略支持两种模式：实时生成模式——用户指定分类、难度分布和题目数量后，系统从题目库中按规则随机抽取题目生成试卷；预设套题模式——管理员预先配置好套题（practice_set表），用户直接使用预设套题进行练习。[10]答题提交时，系统遍历用户提交的答案列表，将每道题的答案与题库中的正确答案进行比对，计算总分和正确率，并生成每题的正确/错误状态和答案解析。练习结果写入practice_info表（练习记录）和practice_detail表（每题作答详情）。[11]练习排行榜功能通过Redis的Sorted Set数据结构实现，以用户正确率为score值进行排序。[17]练习管理服务的核心代码见附录三。
+
+4. 面试管理服务（jc-club-interview）
+
+面试管理服务负责简历AI分析、模拟面试问答和面试记录管理。interview-server模块中的InterviewController暴露简历分析（/interview/analyseResume）、开始面试（/interview/startInterview）、提交回答（/interview/submitAnswer）和面试详情查询（/interview/getDetail）等接口。
+
+简历分析功能对接外部AI服务（如OpenAI API），将用户上传的简历文本发送至AI服务，AI分析后返回简历中的关键技术栈、项目经验和能力评估结果。模拟面试引擎根据简历分析结果和用户选择的面试类型，从面试题目库（关联subject_info表）中筛选合适的面试问题，生成面试会话。用户逐题回答时，系统将问题内容和用户回答发送至AI服务进行评分和评价。面试结束后，系统统计各题得分并生成综合面试评分报告，记录存入interview_history和interview_question_history表。面试管理服务的核心代码见附录九。
+
+5. 社区圈子服务（jc-club-circle）
+
+社区圈子服务负责多级圈子管理、动态发布、评论互动和消息通知。circle-server模块中的ShareCircleController提供圈子创建、查询和加入接口；ShareMomentController提供动态发布、查询和点赞接口；ShareCommentController提供评论和回复接口；SensitiveWordsController提供敏感词管理接口。
+
+动态发布时，系统首先调用敏感词过滤服务对动态文字内容进行审核——通过DFA（确定有限状态自动机）算法匹配敏感词库（sensitive_words表），命中敏感词时拒绝发布并向用户提示。[20]审核通过后，动态数据写入share_moment表，图片上传至OSS存储。评论功能支持多级回复——通过share_comment_reply表的parent_id字段实现树形评论结构，用户可直接评论动态（parent_id为null），也可回复他人的评论（parent_id为被回复评论的ID）。消息通知通过RocketMQ异步发送——当用户的动态被评论或回复时，系统发送消息至MQ，通知消费者写入share_message表并向被通知用户推送消息。圈子服务的核心代码见附录五。[5]
+
+6. 文件存储服务（jc-club-oss）与网关服务（jc-club-gateway）
+
+文件存储服务负责平台中图片、简历等文件的上传和访问。FileController暴露文件上传（/file/upload）和文件下载（/file/download）接口，文件存储在阿里云OSS中，数据库file_info表记录文件的元数据（原始文件名、存储URL、文件大小、上传者等）。
+
+网关服务基于Spring Cloud Gateway构建，是系统的统一入口。网关配置了全局跨域过滤器、Token认证过滤器（校验请求头中的Authorization，调用Auth服务验证Token有效性）和请求日志过滤器。[18]网关通过Nacos动态路由配置实现请求的自动转发——根据请求路径前缀将请求路由至对应的微服务实例（如/subject/**路由至jc-club-subject服务）。网关还整合了Sentinel进行流量控制和熔断降级，当某微服务实例不可用或响应时间过长时，自动熔断并返回友好的错误提示。[2]文件存储和网关服务的核心代码见附录六。

@@ -1,0 +1,77 @@
+附录四：用户认证服务核心代码（AuthUserDomainServiceImpl.java）
+
+用户认证服务（jc-club-auth）的核心领域服务，负责用户注册、登录验证和JWT Token生成。
+
+```java
+@Service
+public class AuthUserDomainServiceImpl implements AuthUserDomainService {
+
+    @Resource
+    private AuthUserDao authUserDao;
+
+    @Resource
+    private AuthUserRoleDao authUserRoleDao;
+
+    @Override
+    public Result<Boolean> register(AuthUserBO authUserBO) {
+        // 1. 检查用户名唯一性
+        AuthUser existingUser = authUserDao
+            .selectByUserName(authUserBO.getUserName());
+        if (existingUser != null) {
+            return Result.fail("该用户名已被注册");
+        }
+
+        // 2. BCrypt加密密码
+        AuthUser authUser = AuthUserConverter.INSTANCE
+            .convertBOToEntity(authUserBO);
+        authUser.setPassword(BCrypt.hashpw(authUserBO.getPassword(),
+            BCrypt.gensalt()));
+        authUser.setStatus(0);
+        authUser.setCreatedTime(new Date());
+
+        // 3. 写入数据库
+        int count = authUserDao.insert(authUser);
+
+        // 4. 分配默认角色
+        AuthUserRole userRole = new AuthUserRole();
+        userRole.setUserId(authUser.getId());
+        userRole.setRoleId(AuthConstant.DEFAULT_ROLE_ID);
+        authUserRoleDao.insert(userRole);
+
+        return Result.ok(count > 0);
+    }
+
+    @Override
+    public Result<AuthUserBO> doLogin(AuthUserBO authUserBO) {
+        // 1. 查询用户
+        AuthUser authUser = authUserDao
+            .selectByUserName(authUserBO.getUserName());
+        if (authUser == null) {
+            return Result.fail("用户名或密码错误");
+        }
+
+        // 2. 验证密码
+        if (!BCrypt.checkpw(authUserBO.getPassword(),
+            authUser.getPassword())) {
+            return Result.fail("用户名或密码错误");
+        }
+
+        // 3. 生成JWT Token
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", authUser.getId());
+        claims.put("userName", authUser.getUserName());
+        String token = JwtUtil.createToken(claims);
+
+        // 4. 缓存用户权限信息至Redis
+        List<AuthPermissionBO> permissions =
+            authPermissionDomainService.getPermission(authUser.getId());
+        redisUtil.set("auth:permission:" + authUser.getId(),
+            JSON.toJSONString(permissions), 3600);
+
+        AuthUserBO result = AuthUserConverter.INSTANCE
+            .convertEntityToBO(authUser);
+        result.setToken(token);
+        return Result.ok(result);
+    }
+}
+```

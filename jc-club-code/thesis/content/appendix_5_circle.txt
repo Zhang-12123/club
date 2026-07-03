@@ -1,0 +1,112 @@
+附录五：社区圈子服务核心代码（ShareMomentController.java）
+
+社区圈子服务（jc-club-circle）的核心控制器，负责动态发布、评论互动和敏感词过滤。
+
+```java
+@RestController
+@RequestMapping("/circle/share/moment")
+public class ShareMomentController {
+
+    @Resource
+    private ShareMomentService shareMomentService;
+
+    @Resource
+    private SensitiveWordsService sensitiveWordsService;
+
+    /**
+     * 发布动态（含敏感词过滤）
+     */
+    @PostMapping("/save")
+    public Result<Boolean> saveMoment(
+            @RequestBody ShareMomentDTO dto) {
+        try {
+            // 敏感词过滤
+            boolean hasSensitive = sensitiveWordsService
+                .checkSensitive(dto.getContent());
+            if (hasSensitive) {
+                return Result.fail("内容包含敏感词，请修改后发布");
+            }
+            return shareMomentService.saveMoment(dto);
+        } catch (Exception e) {
+            log.error("ShareMomentController.saveMoment.error:{}",
+                e.getMessage(), e);
+            return Result.fail("发布动态失败");
+        }
+    }
+
+    /**
+     * 分页查询动态列表
+     */
+    @PostMapping("/getMoments")
+    public Result<PageResult<ShareMomentVO>> getMoments(
+            @RequestBody ShareMomentDTO dto) {
+        PageResult<ShareMomentVO> pageResult =
+            shareMomentService.getMoments(dto);
+        return Result.ok(pageResult);
+    }
+
+    /**
+     * 删除动态
+     */
+    @PostMapping("/remove")
+    public Result<Boolean> removeMoment(
+            @RequestBody ShareMomentDTO dto) {
+        try {
+            return shareMomentService.removeMoment(dto);
+        } catch (Exception e) {
+            log.error("ShareMomentController.removeMoment.error:{}",
+                e.getMessage(), e);
+            return Result.fail("删除动态失败");
+        }
+    }
+}
+```
+
+```java
+/**
+ * DFA敏感词过滤算法实现
+ */
+@Service
+public class SensitiveWordsServiceImpl implements SensitiveWordsService {
+
+    private Map<String, Object> sensitiveWordMap;
+
+    @PostConstruct
+    public void init() {
+        List<SensitiveWords> wordsList = sensitiveWordsDao.selectAll();
+        sensitiveWordMap = buildDFAMap(wordsList);
+    }
+
+    /**
+     * 构建DFA敏感词字典树
+     */
+    private Map<String, Object> buildDFAMap(
+            List<SensitiveWords> wordsList) {
+        Map<String, Object> root = new HashMap<>();
+        for (SensitiveWords words : wordsList) {
+            Map<String, Object> currentMap = root;
+            for (char c : words.getWords().toCharArray()) {
+                String key = String.valueOf(c);
+                currentMap.putIfAbsent("isEnd", 0);
+                if (!currentMap.containsKey(key)) {
+                    currentMap.put(key, new HashMap<>());
+                }
+                currentMap = (Map<String, Object>) currentMap.get(key);
+            }
+            currentMap.put("isEnd", 1);
+        }
+        return root;
+    }
+
+    @Override
+    public boolean checkSensitive(String text) {
+        for (int i = 0; i < text.length(); i++) {
+            int matchLength = checkWord(text, i);
+            if (matchLength > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```

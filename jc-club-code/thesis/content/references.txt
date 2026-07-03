@@ -1,0 +1,20 @@
+[1] 刘亚辉. 基于微服务架构的在线学习平台设计与实现[D]. 福建理工大学, 2024.
+[2] 赵强, 孙悦. 基于Spring Cloud的互联网应用架构优化研究[J]. 计算机工程与应用, 2023, 59(12): 45-53.
+[3] 张明, 李华. 前后端分离架构下Web应用性能优化研究[J]. 计算机应用研究, 2024, 41(7): 2100-2108.
+[4] 于少聪. 基于微服务的客户关系定价系统的设计与实现[D]. 长春工业大学, 2022.
+[5] 王磊. 基于微服务架构的社区平台设计与实现[D]. 北京邮电大学, 2022.
+[6] 马骏. 遗留系统重构过程中微服务提取研究[D]. 内蒙古大学, 2021.
+[7] 刘洋. 面向领域驱动设计的软件系统建模方法研究[D]. 同济大学, 2021.
+[8] 陈家兴, 刘明辉. 领域驱动的微服务软件工程能力评价框架研究[J]. 黄山学院学报, 2022, 24(5): 45-50.
+[9] 赵永刚, 林建国. 基于Docker容器的微服务部署与编排方案研究[J]. 计算机与现代化, 2023, (3): 112-118.
+[10] 李希明, 梁志才, 刘龙浩, 朱盛林. 基于微服务架构的在线评判系统设计与实现[J]. 软件导刊, 2023, 22(8): 144-150.
+[11] 杜瑞庆. 基于Vue和SpringBoot的C语言程序在线测评系统的设计与实现[J]. 唐山师范学院学报, 2023, 45(3): 83-88.
+[12] 陈志杰, 林伟. 微服务架构的在线教育平台设计与实现[J]. 福建电脑, 2024, 40(5): 78-83.
+[13] Sangabriel-Alarcón J, Ocharán-Hernández J O, Cortés-Verdín K, Limón X. Domain-Driven Design for Microservices Architecture Systems Development: A Systematic Mapping Study[C]. Proceedings of IEEE 11th International Conference in Software Engineering Research and Innovation (CONISOFT), 2023: 25-34.
+[14] Liang Y, Tu Z. Design and Implementation of Online Judgment System Based on Microservice Architecture and Docker[C]. Proceedings of IEEE International Conference on Advanced Electrical, Mechanical and Computer Science Engineering (AEMCSE), 2022: 156-161.
+[15] Ren J, Wang Q, Chen L. Design and Implementation of a Microservices-Based Online Learning Platform[C]. Proceedings of IEEE International Conference on Educational Innovation through Technology (EIMT), 2023: 89-96.
+[16] Zhong C, Li S, Huang H, Liu X, Chen Z, Zhang Y, Zhang H. Domain-Driven Design for Microservices: An Evidence-Based Investigation[J]. IEEE Transactions on Software Engineering, 2024, 50(6): 1425-1449.
+[17] 李建平, 王丽. 基于Redis缓存数据库和Nginx负载均衡技术的购物网站性能优化[J]. 软件工程, 2023, 26(5): 56-61.
+[18] 刘鑫, 张涛. Spring Security+JWT实现微服务架构中的身份验证和授权[J]. 电脑知识与技术, 2024, 20(22): 68-72.
+[19] 汪睿, 胡外光, 胡珊珊, 周颖. 基于ElasticSearch的医疗数据检索系统的设计与实现[J]. 信息技术, 2024, 48(4): 76-82.
+[20] 关兴义, 赵敏, 伍文昌. 一种基于DFA的短文本信息过滤算法[J]. 软件导刊, 2023, 22(4): 103-108.

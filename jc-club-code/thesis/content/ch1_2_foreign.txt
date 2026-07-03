@@ -1,0 +1,7 @@
+2020至2021年间，以LeetCode、HackerRank为代表的国外在线刷题平台在全球范围内取得了巨大成功，成为程序员面试准备的标准工具。IEEE发表的《A Scalable Online Programming Platform for Software Engineering Education》提出了基于微服务架构的可扩展在线编程教育平台方案，验证了微服务架构在在线教育场景中的适用性。DDD在微服务拆分中的应用研究也取得进展，众多学者从不同角度对DDD方法进行了深入探讨。[13]
+
+2022年，在线判题系统的架构研究不断深入。Liang和Tu在IEEE AEMCSE国际会议上发表了《Design and Implementation of Online Judgment System Based on Microservice Architecture and Docker》，提出了基于微服务和容器技术的在线判题系统设计方案，利用Docker容器隔离用户代码执行环境，有效保障了系统的安全性和可扩展性。[14]该研究为编程练习平台的技术选型提供了重要参考。
+
+2023至2024年间，AI驱动的编程学习助手成为研究热点。Ren等人在IEEE EIMT国际会议上发表了《Design and Implementation of a Microservices-Based Online Learning Platform》，基于Spring Cloud构建了一个稳定的在线教学平台，验证了微服务架构在在线教育场景中的工程可行性。[15]Zhong等人在IEEE Transactions on Software Engineering上发表了具有重要影响力的综述性论文《Domain-Driven Design for Microservices: An Evidence-Based Investigation》，该文通过系统性文献综述和对63位从业者的问卷调研，从5W1H角度全面揭示了DDD在微服务识别中应用（DDD4M）的现状、挑战与解决方案，为该领域提供了系统化的理论框架和实践指南。[16]
+
+综合国内外研究现状，该领域呈现以下发展趋势：第一，架构微服务化与DDD化——从单体架构向DDD指导的微服务架构演进，通过限界上下文合理拆分业务边界，实现服务的独立部署与弹性伸缩。[16]第二，学习路径智能化——基于AI算法实现个性化题目推荐、智能组卷和学习路径规划，提升学习效率和用户体验；第三，功能一体化与社区化——将题库管理、在线刷题、模拟面试、简历分析、社区互动等功能整合于统一平台，形成完整的"学-练-测-面"生态闭环，同时强化社交属性以提升用户粘性。[5]第四，高性能与高可用——通过Redis缓存、Elasticsearch全文检索、RocketMQ消息队列、CDN加速等技术手段，保障平台在高并发场景下的性能与稳定性。[17]第五，云原生与容器化部署——采用Docker容器化部署、Kubernetes编排管理，实现系统的快速部署、弹性伸缩和自动化运维。[9]
